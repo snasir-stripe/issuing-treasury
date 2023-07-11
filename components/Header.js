@@ -4,8 +4,8 @@ import React from 'react';
 const Header = () => {
   return (
     <Head>
-      <title>HomeMadeHam </title>
-      <link rel="icon" href="/favicon.ico" />
+      <title>Rocket Rides</title>
+      <link rel="icon" href="/favicon.png" />
     </Head>
   );
 };
