@@ -1,3 +1,4 @@
+import { useRouter } from "next/router";
 import {
   createContext,
   ReactNode,
@@ -7,8 +8,11 @@ import {
   useRef,
 } from "react";
 
+import { fetchApi } from "../utils/api-helpers";
+
 type User = {
   id: string;
+  accountId: string;
   avatar: string;
   name: string;
   email: string;
@@ -22,14 +26,16 @@ type State = {
 
 enum ActionTypes {
   INITIALIZE = "INITIALIZE",
-  SIGN_IN = "SIGN_IN",
-  SIGN_OUT = "SIGN_OUT",
+  REGISTRATION_SUCCEEDED = "REGISTRATION_SUCCEEDED",
+  LOGIN_SUCCEEDED = "LOGIN_SUCCEEDED",
+  LOGOUT_SUCCEEDED = "LOGOUT_SUCCEEDED",
 }
 
 type Action =
   | { type: ActionTypes.INITIALIZE; payload?: User }
-  | { type: ActionTypes.SIGN_IN; payload: User }
-  | { type: ActionTypes.SIGN_OUT; payload?: undefined };
+  | { type: ActionTypes.REGISTRATION_SUCCEEDED; payload: User }
+  | { type: ActionTypes.LOGIN_SUCCEEDED; payload: User }
+  | { type: ActionTypes.LOGOUT_SUCCEEDED; payload?: undefined };
 
 const initialState: State = {
   isAuthenticated: false,
@@ -54,20 +60,29 @@ const handlers: Record<ActionTypes, (state: State, action: Action) => State> = {
           }),
     };
   },
-  [ActionTypes.SIGN_IN]: (state, action) => {
+  [ActionTypes.REGISTRATION_SUCCEEDED]: (state, action) => {
     const user = action.payload;
 
     return {
       ...state,
       isAuthenticated: true,
-      user: user ?? null, // Set the user property to null if user is undefined
+      user: user ?? null,
     };
   },
-  [ActionTypes.SIGN_OUT]: (state) => {
+  [ActionTypes.LOGIN_SUCCEEDED]: (state, action) => {
+    const user = action.payload;
+
+    return {
+      ...state,
+      isAuthenticated: true,
+      user: user ?? null,
+    };
+  },
+  [ActionTypes.LOGOUT_SUCCEEDED]: (state) => {
     return {
       ...state,
       isAuthenticated: false,
-      user: null, // Set the user to null when signing out
+      user: null,
     };
   },
 };
@@ -81,22 +96,21 @@ export const AuthContext = createContext<{
   isAuthenticated: boolean;
   isLoading: boolean;
   user: User | null;
-  skip: () => void;
-  signIn: (email: string, password: string) => void;
-  signOut: () => void;
-  signUp: (email: string, name: string, password: string) => void;
+  login: (email: string, password: string) => void;
+  logout: () => void;
+  register: (email: string, name: string, password: string) => void;
 }>({
   isAuthenticated: false,
   isLoading: true,
   user: null,
-  skip: () => ({}),
-  signIn: () => ({}),
-  signOut: () => ({}),
-  signUp: () => ({}),
+  login: () => ({}),
+  logout: () => ({}),
+  register: () => ({}),
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const router = useRouter();
   const initialized = useRef(false);
 
   const initialize = async () => {
@@ -109,25 +123,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     let isAuthenticated = false;
 
-    try {
-      isAuthenticated =
-        window.sessionStorage.getItem("authenticated") === "true";
-    } catch (err) {
-      console.error(err);
-    }
+    isAuthenticated = window.sessionStorage.getItem("authenticated") === "true";
 
     if (isAuthenticated) {
-      const user: User = {
-        id: "5e86809283e28b96d2d38537",
-        avatar: "/assets/avatars/avatar-anika-visser.png",
-        name: "Anika Visser",
-        email: "anika.visser@devias.io",
-      };
-
-      dispatch({
-        type: ActionTypes.INITIALIZE,
-        payload: user,
-      });
+      const userString = window.sessionStorage.getItem("user");
+      if (userString) {
+        const user: User = JSON.parse(userString);
+        dispatch({
+          type: ActionTypes.INITIALIZE,
+          payload: user,
+        });
+      } else {
+        dispatch({
+          type: ActionTypes.INITIALIZE,
+        });
+      }
     } else {
       dispatch({
         type: ActionTypes.INITIALIZE,
@@ -139,68 +149,90 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     initialize();
   }, []);
 
-  const skip = () => {
-    try {
+  const register = async (name: string, email: string, password: string) => {
+    const body = { name: name, email: email, password: password };
+    const response = await fetchApi("/api/register", body);
+
+    if (response.ok) {
+      const data = await response.json();
+
+      const user: User = {
+        id: data.userId,
+        accountId: data.accountId,
+        avatar: "/assets/avatars/avatar-anika-visser.png",
+        name: data.businessName,
+        email: data.userEmail,
+      };
+
       window.sessionStorage.setItem("authenticated", "true");
-    } catch (err) {
-      console.error(err);
+      window.sessionStorage.setItem("user", JSON.stringify(user));
+
+      dispatch({
+        type: ActionTypes.REGISTRATION_SUCCEEDED,
+        payload: user,
+      });
+
+      if (data.requiresOnboarding === true) {
+        router.push("/onboard");
+      } else {
+        router.push("/");
+      }
     }
-
-    const user: User = {
-      id: "5e86809283e28b96d2d38537",
-      avatar: "/assets/avatars/avatar-anika-visser.png",
-      name: "Anika Visser",
-      email: "anika.visser@devias.io",
-    };
-
-    dispatch({
-      type: ActionTypes.SIGN_IN,
-      payload: user,
-    });
   };
 
-  const signIn = async (email: string, password: string) => {
-    if (email !== "demo@devias.io" || password !== "Password123!") {
-      throw new Error("Please check your email and password");
-    }
+  const login = async (email: string, password: string) => {
+    const body = { email: email, password: password };
+    const response = await fetchApi("/api/login", body);
 
-    try {
+    if (response.ok) {
+      const data = await response.json();
+
+      const user: User = {
+        id: data.userId,
+        accountId: data.accountId,
+        avatar: "/assets/avatars/avatar-anika-visser.png",
+        name: data.businessName,
+        email: data.userEmail,
+      };
+
       window.sessionStorage.setItem("authenticated", "true");
-    } catch (err) {
-      console.error(err);
+      window.sessionStorage.setItem("user", JSON.stringify(user));
+
+      dispatch({
+        type: ActionTypes.LOGIN_SUCCEEDED,
+        payload: user,
+      });
+
+      if (data.requiresOnboarding === true) {
+        router.push("/onboard");
+      } else {
+        router.push("/");
+      }
     }
-
-    const user: User = {
-      id: "5e86809283e28b96d2d38537",
-      avatar: "/assets/avatars/avatar-anika-visser.png",
-      name: "Anika Visser",
-      email: "anika.visser@devias.io",
-    };
-
-    dispatch({
-      type: ActionTypes.SIGN_IN,
-      payload: user,
-    });
   };
 
-  const signUp = async (email: string, name: string, password: string) => {
-    throw new Error("Sign up is not implemented");
-  };
+  const logout = async () => {
+    const response = await fetchApi("/api/logout");
 
-  const signOut = () => {
-    dispatch({
-      type: ActionTypes.SIGN_OUT,
-    });
+    if (response.ok) {
+      window.sessionStorage.setItem("authenticated", "false");
+      window.sessionStorage.removeItem("user");
+
+      dispatch({
+        type: ActionTypes.LOGOUT_SUCCEEDED,
+      });
+
+      router.push("/auth/login");
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
         ...state,
-        skip,
-        signIn,
-        signUp,
-        signOut,
+        login: login,
+        register: register,
+        logout: logout,
       }}
     >
       {children}

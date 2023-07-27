@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useCallback } from "react";
 
+import { useAuthContext } from "../../contexts/auth-context";
 import { useAuth } from "../../hooks/use-auth";
 
 export const AccountPopover = ({
@@ -22,10 +23,11 @@ export const AccountPopover = ({
 }) => {
   const router = useRouter();
   const auth = useAuth();
+  const { user } = useAuthContext();
 
   const handleSignOut = useCallback(() => {
     onClose?.();
-    auth.signOut();
+    auth.logout();
     router.push("/auth/login");
   }, [onClose, auth, router]);
 
@@ -48,7 +50,7 @@ export const AccountPopover = ({
       >
         <Typography variant="overline">Account</Typography>
         <Typography color="text.secondary" variant="body2">
-          Anika Visser
+          {user?.name}
         </Typography>
       </Box>
       <Divider />
