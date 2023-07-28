@@ -17,18 +17,21 @@ import {
   Typography,
 } from "@mui/material";
 import { format, fromUnixTime } from "date-fns";
+import Stripe from "stripe";
 
 import { SeverityPill } from "../../components/severity-pill";
 import { formatUSD } from "../../utils/format";
 
-const statusMap = {
-  pending: "warning",
-  delivered: "success",
-  refunded: "error",
+import TransactionFlowDetails from "./transaction-flow-details";
+
+const statusMap: Record<string, "warning" | "success" | "error" | "info"> = {
+  open: "warning",
+  posted: "success",
+  void: "error",
 };
 
 export const OverviewLatestTransactions = (props: {
-  faTransactions: [];
+  faTransactions: Stripe.Treasury.Transaction[];
   sx?: object;
 }) => {
   const { faTransactions = [], sx } = props;
@@ -50,58 +53,26 @@ export const OverviewLatestTransactions = (props: {
           <TableBody>
             {faTransactions.map((transaction) => {
               const createdAt = format(
-                // @ts-expect-error Remove after deployment succeeds
                 fromUnixTime(transaction.created),
                 "dd/MM/yyyy",
               );
 
               return (
                 <>
-                  {/* @ts-expect-error Remove after deployment succeeds */}
                   <TableRow hover key={transaction.id}>
                     <TableCell>{createdAt}</TableCell>
                     <TableCell>
-                      {/* @ts-expect-error Remove after deployment succeeds */}
                       {`${formatUSD(transaction.amount / 100)} USD`}
                     </TableCell>
                     <TableCell sx={{ textTransform: "uppercase" }}>
-                      {/* @ts-expect-error Remove after deployment succeeds */}
-                      {transaction.flow_details[transaction.flow_type]
-                        .hosted_regulatory_receipt_url ? (
-                        <Stack direction="row" spacing={1}>
-                          {/* @ts-expect-error Remove after deployment succeeds */}
-                          <Typography>{transaction.flow_type}</Typography>
-                          <Link
-                            href={
-                              // @ts-expect-error Remove after deployment succeeds
-                              transaction.flow_details[transaction.flow_type]
-                                .hosted_regulatory_receipt_url
-                            }
-                            target="_blank"
-                          >
-                            <SvgIcon>
-                              <DocumentArrowDownIcon />
-                            </SvgIcon>
-                          </Link>
-                        </Stack>
-                      ) : (
-                        <Typography>
-                          {/* @ts-expect-error Remove after deployment succeeds */}
-                          {transaction.flow_type}
-                        </Typography>
-                      )}
+                      <TransactionFlowDetails transaction={transaction} />
                     </TableCell>
                     <TableCell>
-                      {/* @ts-expect-error Remove after deployment succeeds */}
                       <SeverityPill color={statusMap[transaction.status]}>
-                        {/* @ts-expect-error Remove after deployment succeeds */}
                         {transaction.status}
                       </SeverityPill>
                     </TableCell>
-                    <TableCell>
-                      {/* @ts-expect-error Remove after deployment succeeds */}
-                      {transaction.description}
-                    </TableCell>
+                    <TableCell>{transaction.description}</TableCell>
                   </TableRow>
                 </>
               );
