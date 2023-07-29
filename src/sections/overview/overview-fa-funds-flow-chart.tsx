@@ -1,138 +1,129 @@
+import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import ArrowPathIcon from "@heroicons/react/24/solid/ArrowPathIcon";
-import { Button, Card, CardContent, CardHeader, SvgIcon } from "@mui/material";
 import {
-  BarElement,
-  CategoryScale,
-  Chart as ChartJS,
-  Legend,
-  LinearScale,
-  Title,
-  Tooltip,
-} from "chart.js";
-import ChartDataLabels from "chartjs-plugin-datalabels";
-import { Bar } from "react-chartjs-2";
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  CardHeader,
+  Divider,
+  SvgIcon,
+  useTheme,
+} from "@mui/material";
 
-const useChartOptions = () => {
+import { Chart } from "../../components/chart";
+import { ChartData } from "../../types/chart-data";
+
+const useChartOptions = (faFundsFlowChartData: ChartData) => {
+  const theme = useTheme();
+
   return {
-    interaction: {
-      intersect: false,
-      axis: "x",
+    chart: {
+      background: "transparent",
+      stacked: false,
+      toolbar: {
+        show: false,
+      },
     },
-    responsive: true,
-    plugins: {
-      tooltip: {
-        callbacks: {
-          label: function (context: any) {
-            return Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-              minimumFractionDigits: 2,
-            }).format(context.parsed.y);
-          },
+    colors: [theme.palette.primary.main, theme.palette.error.light],
+    dataLabels: {
+      enabled: false,
+    },
+    fill: {
+      opacity: 1,
+      type: "solid",
+    },
+    grid: {
+      borderColor: theme.palette.divider,
+      strokeDashArray: 2,
+      xaxis: {
+        lines: {
+          show: false,
         },
       },
-      legend: {
-        position: "top",
-        align: "left",
-        labels: {
-          usePointStyle: true,
+      yaxis: {
+        lines: {
+          show: true,
         },
       },
-      datalabels: {
-        anchor: "end", // remove this line to get label in middle of the bar
-        align: "end",
-        display: "auto",
-        formatter: function (value: any, context: any) {
-          return Intl.NumberFormat("en-US", {
+      padding: {
+        bottom: 32,
+      },
+    },
+    legend: {
+      fontSize: "16px",
+      itemMargin: {
+        horizontal: 16,
+      },
+    },
+    theme: {
+      mode: theme.palette.mode,
+    },
+    xaxis: {
+      axisBorder: {
+        color: theme.palette.divider,
+        show: true,
+      },
+      axisTicks: {
+        color: theme.palette.divider,
+        show: true,
+      },
+      categories: faFundsFlowChartData.faTransactionsDates,
+      labels: {
+        offsetY: 5,
+        style: {
+          fontSize: "16px",
+          colors: theme.palette.text.secondary,
+        },
+      },
+    },
+    yaxis: {
+      labels: {
+        formatter: (value: number) =>
+          new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
             minimumFractionDigits: 2,
-          }).format(value);
-        },
-        labels: {
-          value: {
-            color: "#666666",
-          },
+          }).format(value),
+        offsetX: -10,
+        style: {
+          fontSize: "16px",
+          colors: theme.palette.text.secondary,
         },
       },
     },
-    scales: {
-      x: {
-        stacked: false,
-        ticks: {
-          // maxRotation: 90,
-          // minRotation: 90
-        },
-      },
+    tooltip: {
       y: {
-        // Provide extra space on the boundaries
-        display: true,
-        ticks: {
-          callback: function (value: any, index: any, values: any) {
-            return Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-              minimumFractionDigits: 2,
-            }).format(value);
-          },
-        },
-        scaleLabel: {
-          display: true,
-        },
+        formatter: (value: number) =>
+          new Intl.NumberFormat("en-US", {
+            style: "currency",
+            currency: "USD",
+            minimumFractionDigits: 2,
+          }).format(value),
       },
     },
   };
 };
 
-export const OverviewFinancialAccountFundsFlowChart = (props: {
-  faTransactionsChart: any;
+export const OverviewFinancialAccountFundsFlowChart = ({
+  faFundsFlowChartData,
+  sx,
+}: {
+  faFundsFlowChartData: ChartData;
   sx?: object;
 }) => {
-  const { faTransactionsChart, sx } = props;
+  const chartOptions = useChartOptions(faFundsFlowChartData);
 
-  ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    Tooltip,
-    Legend,
-    ChartDataLabels,
-  );
-
-  const chartOptions = useChartOptions();
-
-  const data = {
-    labels: faTransactionsChart.faTransactionsDates,
-    datasets: [
-      {
-        label: "Funds in",
-        type: "bar",
-        // this dataset is drawn on top
-        order: 2,
-        data: faTransactionsChart.faTransactionsFundsIn,
-        backgroundColor: ["rgba(220, 252, 231, 0.4)"],
-        borderColor: ["rgba(22, 101, 52,  1)"],
-        borderWidth: 1,
-        datalabels: {
-          color: "#666666",
-        },
-      },
-      {
-        label: "Funds Out",
-        type: "bar",
-        // this dataset is drawn on top
-        order: 2,
-        data: faTransactionsChart.faTransactionsFundsOut,
-        backgroundColor: ["rgba(247, 132, 134, 0.4)"],
-        borderColor: ["rgba(250, 0, 4, 1)"],
-        borderWidth: 1,
-        datalabels: {
-          color: "#666666",
-        },
-      },
-    ],
-  };
+  const chartSeries = [
+    {
+      name: "Funds in",
+      data: faFundsFlowChartData.faTransactionsFundsIn,
+    },
+    {
+      name: "Funds out",
+      data: faFundsFlowChartData.faTransactionsFundsOut,
+    },
+  ];
 
   return (
     <Card sx={sx}>
@@ -153,9 +144,28 @@ export const OverviewFinancialAccountFundsFlowChart = (props: {
         title="Account Funds Flow"
       />
       <CardContent>
-        {/* @ts-expect-error Remove after deployment succeeds */}
-        <Bar options={chartOptions} data={data} />
+        <Chart
+          height={350}
+          options={chartOptions}
+          series={chartSeries}
+          type="bar"
+          width="100%"
+        />
       </CardContent>
+      <Divider />
+      <CardActions sx={{ justifyContent: "flex-end" }}>
+        <Button
+          color="inherit"
+          endIcon={
+            <SvgIcon fontSize="small">
+              <ArrowRightIcon />
+            </SvgIcon>
+          }
+          size="small"
+        >
+          Overview
+        </Button>
+      </CardActions>
     </Card>
   );
 };
