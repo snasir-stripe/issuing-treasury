@@ -1,9 +1,8 @@
 import { format, addDays } from "date-fns";
 import Stripe from "stripe";
 
-import { ChartData } from "../types/chart-data";
-
-import stripe from "./stripe-loader";
+import { ChartData } from "src/types/chart-data";
+import stripe from "src/utils/stripe-loader";
 
 export async function getFinancialAccountTransactions(StripeAccountID: string) {
   const financialAccounts = await stripe.treasury.financialAccounts.list({
@@ -71,7 +70,7 @@ type FundsFlowByDate = {
   fundsOut: number;
 };
 
-const NUMBER_OF_DAYS = 7;
+const NUMBER_OF_DAYS = 10;
 const DATE_FORMAT = "MMM dd";
 
 export async function getFinancialAccountTransactionDetails(

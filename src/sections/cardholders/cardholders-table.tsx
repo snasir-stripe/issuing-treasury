@@ -14,11 +14,11 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { format, fromUnixTime } from "date-fns";
 import React, { ChangeEvent } from "react";
 import Stripe from "stripe";
 
-import CardholderUpdateWidget from "./cardholder-update-widget";
+import CardholderUpdateWidget from "src/sections/cardholders/cardholder-update-widget";
+import { formatDateTime } from "src/utils/format";
 
 const CardholdersTable = ({
   count = 0,
@@ -79,11 +79,6 @@ const CardholdersTable = ({
           <TableBody>
             {items.map((cardholder) => {
               const isSelected = selected.includes(cardholder.id);
-              const createdAt = format(
-                fromUnixTime(cardholder.created),
-                "MMM dd, yyyy",
-              );
-
               return (
                 <TableRow hover key={cardholder.id}>
                   <TableCell padding="checkbox">
@@ -106,7 +101,7 @@ const CardholdersTable = ({
                     </Stack>
                   </TableCell>
                   <TableCell>{cardholder.email}</TableCell>
-                  <TableCell>{createdAt}</TableCell>
+                  <TableCell>{formatDateTime(cardholder.created)}</TableCell>
                   <TableCell
                     sx={{
                       width: "1px",
