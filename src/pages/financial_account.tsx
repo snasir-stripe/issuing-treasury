@@ -5,7 +5,6 @@ import {
   Typography,
   Chip,
   CardHeader,
-  Button,
   List,
   ListItem,
   ListItemText,
@@ -20,6 +19,7 @@ import Stripe from "stripe";
 
 import DashboardLayout from "src/layouts/dashboard/layout";
 import { withAuthRequiringOnboarded } from "src/middleware/auth-middleware";
+import SendMoneyWizardDialog from "src/sections/financial-account/send-money-wizard-dialog";
 import { OverviewFinancialAccountBalance } from "src/sections/overview/overview-fa-balance";
 import { OverviewFinancialAccountOutboundPending } from "src/sections/overview/overview-fa-outbound-pending";
 import { OverviewLatestTransactions } from "src/sections/overview/overview-latest-transactions";
@@ -207,7 +207,7 @@ const Page = ({
                         />
                       ),
                     )}
-                    <Button variant="contained">Send Money</Button>
+                    <SendMoneyWizardDialog />
                   </Stack>
                 </CardContent>
               </Card>
