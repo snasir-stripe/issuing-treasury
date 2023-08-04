@@ -1,10 +1,7 @@
-import { serialize } from "cookie";
 import { NextApiRequest, NextApiResponse } from "next";
 import * as Yup from "yup";
 
-import { authenticateUser } from "src/utils/authentication";
 import stripe from "src/utils/stripe-loader";
-import { createAccountOnboardingUrl } from "src/utils/stripe_helpers";
 
 const validationSchema = Yup.object().shape({
   name: Yup.string().max(255).required("Business name is required"),
@@ -85,37 +82,7 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
     },
   });
 
-  const authenticationResult = await authenticateUser(email);
-
-  if (!authenticationResult) {
-    return res.status(500).json({
-      isAuthenticated: false,
-      error: "Unknown error occurred",
-    });
-  }
-
-  const url = await createAccountOnboardingUrl(
-    account.id,
-    process.env.DEMO_HOST,
-  );
-
-  res.setHeader(
-    "Set-Cookie",
-    serialize("app_auth", authenticationResult.cookie, {
-      path: "/",
-      httpOnly: true,
-    }),
-  );
-
-  return res.json({
-    isAuthenticated: true,
-    requiresOnboarding: authenticationResult.requiresOnboarding,
-    businessName: authenticationResult.businessName,
-    accountId: authenticationResult.accountId,
-    userEmail: authenticationResult.userEmail,
-    userId: authenticationResult.userId,
-    url: url,
-  });
+  return res.json({ email: email });
 };
 
 export default handler;

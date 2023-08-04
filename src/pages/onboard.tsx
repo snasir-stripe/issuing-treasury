@@ -1,21 +1,20 @@
 import { Box, Stack, Typography, Button, Alert } from "@mui/material";
-import { serialize } from "cookie";
 import { GetServerSidePropsContext } from "next";
+import { Session } from "next-auth/core/types";
+import { signOut } from "next-auth/react";
 import React, { ReactNode, useState } from "react";
 
-import { useAuth } from "src/hooks/use-auth";
 import AuthLayout from "src/layouts/auth/layout";
 import { withAuth } from "src/middleware/auth-middleware";
-import JwtPayload from "src/types/jwt-payload";
-import { encode } from "src/utils/jwt_encode_decode";
+import { hasOutstandingRequirements } from "src/utils/onboarding-helpers";
 import stripe from "src/utils/stripe-loader";
 import { createAccountOnboardingUrl } from "src/utils/stripe_helpers";
 
 export const getServerSideProps = withAuth(
-  async (context: GetServerSidePropsContext, session: JwtPayload) => {
+  async (context: GetServerSidePropsContext, session: Session) => {
     const account = await stripe.accounts.retrieve(session.accountId);
 
-    if (account?.requirements?.currently_due?.length ?? 0 > 1) {
+    if (await hasOutstandingRequirements(session.accountId)) {
       // Create the onboarding link and redirect
       const url = await createAccountOnboardingUrl(
         account.id,
@@ -28,13 +27,6 @@ export const getServerSideProps = withAuth(
         },
       };
     } else {
-      // Renew cookie
-      session.requiresOnboarding = false;
-      const cookie = encode(JSON.stringify(session));
-      context.res.setHeader(
-        "Set-Cookie",
-        serialize("app_auth", cookie, { path: "/", httpOnly: true }),
-      );
       return {
         redirect: { destination: "/", permanent: false },
       };
@@ -43,7 +35,6 @@ export const getServerSideProps = withAuth(
 );
 
 const Page = ({ url }: { url: string }) => {
-  const auth = useAuth();
   const [isContinuingOnboarding, setIsContinuingOnboarding] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -55,7 +46,7 @@ const Page = ({ url }: { url: string }) => {
 
   const handleLogout = async (e: any) => {
     e.preventDefault();
-    auth.logout();
+    await signOut();
     setIsLoggingOut(true);
   };
 
