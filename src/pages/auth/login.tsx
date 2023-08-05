@@ -7,7 +7,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Field, Form, Formik } from "formik";
+import { Field, Form, Formik, FormikHelpers } from "formik";
 import NextLink from "next/link";
 import router from "next/router";
 import { signIn } from "next-auth/react";
@@ -24,13 +24,41 @@ const validationSchema = Yup.object({
   password: Yup.string().max(255).required("Password is required"),
 });
 
-const initialValues = {
-  email: "",
-  password: "",
-  submit: null,
-};
-
 const Page = () => {
+  const { callbackUrl } = router.query;
+
+  const initialValues = {
+    email: "",
+    password: "",
+    submit: null,
+  };
+
+  const handleSubmit = async (
+    values: typeof initialValues,
+    {
+      setStatus,
+      setErrors,
+      setSubmitting,
+    }: FormikHelpers<typeof initialValues>,
+  ) => {
+    try {
+      const response = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        callbackUrl: (callbackUrl || "/") as string,
+      });
+      if (response?.error === "CredentialsSignin") {
+        throw new Error("Invalid credentials");
+      } else if (response?.error) {
+        throw new Error("Something went wrong");
+      }
+    } catch (err) {
+      setStatus({ success: false });
+      setErrors({ submit: (err as Error).message });
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <Box
@@ -68,29 +96,7 @@ const Page = () => {
             <Formik
               initialValues={initialValues}
               validationSchema={validationSchema}
-              onSubmit={async (
-                values,
-                { setStatus, setErrors, setSubmitting },
-              ) => {
-                try {
-                  const response = await signIn("credentials", {
-                    email: values.email,
-                    password: values.password,
-                    redirect: false,
-                  });
-                  if (response?.ok) {
-                    router.push("/");
-                  } else if (response?.error === "CredentialsSignin") {
-                    throw new Error("Invalid credentials");
-                  } else {
-                    throw new Error("Something went wrong");
-                  }
-                } catch (err) {
-                  setStatus({ success: false });
-                  setErrors({ submit: (err as Error).message });
-                  setSubmitting(false);
-                }
-              }}
+              onSubmit={handleSubmit}
             >
               {({ errors, touched, isSubmitting }) => (
                 <Form>
@@ -132,7 +138,7 @@ const Page = () => {
                     variant="contained"
                     disabled={isSubmitting}
                   >
-                    Continue
+                    {isSubmitting ? "Logging in..." : "Continue"}
                   </Button>
                 </Form>
               )}
