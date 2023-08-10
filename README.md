@@ -1,3 +1,5 @@
+NOTE: This repository is archived and here only for historical reasons. You should look at the original upstream repo for the latest code sample and demo: https://github.com/stripe-samples/issuing-treasury
+
 ## Example Stripe Treasury integration showing Embedded Finance
 
 
